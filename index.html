@@ -253,6 +253,158 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/11/24/Java并发编程（四）之线程安全问题/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="猫屎咖啡">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="猫屎咖啡">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/11/24/Java并发编程（四）之线程安全问题/" itemprop="url">Java并发编程（四）之线程安全问题</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-11-24T19:24:41+08:00">
+                2019-11-24
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>讲完创建线程的方法，接下来我们学习一下多线程编程中会遇到的线程安全问题。</p>
+<p>谈到线程安全，就会涉及到共享资源，所谓共享资源，就是指该资源被多个线程使用。线程安全问题就是，当多个线程同时读写同一个共享资源的时候，没有加任何同步措施，导致出现脏数据，以及预料之外的结果。</p>
+<p>例如下面代码：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ThreadSafeTest</span> </span>&#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">int</span> count = <span class="number">5</span>;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> String lock = <span class="string">"lock"</span>;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        MyThreadSafeTest thread1 = <span class="keyword">new</span> MyThreadSafeTest();</span><br><span class="line">        MyThreadSafeTest thread2 = <span class="keyword">new</span> MyThreadSafeTest();</span><br><span class="line">        thread1.start();</span><br><span class="line">        thread2.start();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">MyThreadSafeTest</span> <span class="keyword">extends</span> <span class="title">Thread</span></span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//private int count = 10;</span></span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;   </span><br><span class="line">        <span class="keyword">while</span>(ThreadSafeTest.count&gt;<span class="number">0</span>)&#123;</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">                Thread.sleep(<span class="number">500</span>);</span><br><span class="line">                sale();</span><br><span class="line">            &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">                e.printStackTrace();</span><br><span class="line">            &#125;</span><br><span class="line">            </span><br><span class="line">        &#125;   </span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">sale</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (ThreadSafeTest.count &gt; <span class="number">0</span>) &#123;</span><br><span class="line">            --ThreadSafeTest.count;</span><br><span class="line">            System.out.println(Thread.currentThread().getName() + <span class="string">",出售第"</span> + (<span class="number">5</span> - ThreadSafeTest.count) + <span class="string">"张票"</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        </span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">Thread-<span class="number">1</span>,出售第<span class="number">2</span>张票</span><br><span class="line">Thread-<span class="number">0</span>,出售第<span class="number">2</span>张票</span><br><span class="line">Thread-<span class="number">1</span>,出售第<span class="number">3</span>张票</span><br><span class="line">Thread-<span class="number">0</span>,出售第<span class="number">4</span>张票</span><br><span class="line">Thread-<span class="number">1</span>,出售第<span class="number">5</span>张票</span><br></pre></td></tr></table></figure>
+
+<p>我们模拟了多窗口售票的问题，每个线程就是一个窗口。可以看到，会出现一张票卖出多次的情况，这显然是不合理的。</p>
+<p>这是由于什么原因导致的呢？要查找其原因，首先我们需要了解Java的内存模型。如下图：</p>
+<p><img src="/pic_doc/java_mem_model.png" alt="Java内存模型"> </p>
+<p>Java内存模型规定，将所有的变量都放在主内存中，当线程使用变量的时候从主内存中将变量复制一份到自己的工作空间或者说工作内存，线程读写变量时操作的是自己工作内存中的变量。</p>
+<p>Java内存模型是一个抽象的概念，实际实现中的工作内存是什么样子呢？</p>
+<p><img src="/pic_doc/cpu_mem_model.png" alt="Java内模型"> </p>
+<p>图中所示是一个双核CPU的架构，Java内存模型里面的工作内存就对应这里的L1或者L2或者CPU的寄存器。</p>
+<p>当一个线程操作共享变量时，它首先从主内存复制共享变量到自己的工作内存，对工作内存里的变量进行处理，处理完后将变最值更新到主内存。</p>
+<p>那么假如线程A和线程B同时处理一个共享变量，会出现什么情况？我们使用图中所示CPU架构，假设线程A和线程B使用不同CPU执行，并且当前两级Cache都为空。那么这时候由于Cache的存在，将会导致内存不可见问题，具体看下面的分析。</p>
+<ol>
+<li>线程A首先获取共享变量X的值，由于两级Cache都没有命中，所以加教木中X的值，假如为0。然后把X=0的值缓存到两级缓存，线程A修改X的值为1，然后将其写入两级Cache，并且刷新到主内存。线程A操作完毕后，线程A所在CPU的两级Cache内和主内存里面的X的值都是1。</li>
+<li>线程B获取X的值，首先一级缓存没有命中，然后看二级缓存，二级缓存命的所以返回X=1，到这里一切都是正常的，因为这时候主内存中也是X=1。然后线程B修改X的值为2,并将其存放线程B所在的一级Cache和共享二级Cache中，最后更新主内存中X的值为2，到这里一切都是好的。</li>
+<li>线程A这次又需要修改X的值，获取时一级缓存命中，并且X=1，到这里问题与出现了，明明线程B已经把X的值修改为了2，为何线程A获取的还是1呢？这就是共享变量的内存不可见问题，也就是线程B写入的值对线程A不可见。</li>
+</ol>
+<p>了解了这些，我们就会明白，上述代码中，一张票卖多次的问题是如何导致的了，就是因为<code>thread1</code>与<code>thread2</code>由于内存模型导致的共享变量<code>count</code>内存不可见。</p>
+<p>那么如何解决呢？</p>
+<p>大学时候我们学过使用<code>synchronized</code>加锁来解决线程安全问题，例如上述卖票代码改为如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ThreadSafeTest</span> </span>&#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">int</span> count = <span class="number">5</span>;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> String lock = <span class="string">"lock"</span>;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        MyThreadSafeTest thread1 = <span class="keyword">new</span> MyThreadSafeTest();</span><br><span class="line">        MyThreadSafeTest thread2 = <span class="keyword">new</span> MyThreadSafeTest();</span><br><span class="line">        thread1.start();</span><br><span class="line">        thread2.start();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">MyThreadSafeTest</span> <span class="keyword">extends</span> <span class="title">Thread</span></span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//private int count = 10;</span></span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;   </span><br><span class="line">        <span class="keyword">while</span>(ThreadSafeTest.count&gt;<span class="number">0</span>)&#123;</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">                Thread.sleep(<span class="number">500</span>);</span><br><span class="line">                sale();</span><br><span class="line">            &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">                e.printStackTrace();</span><br><span class="line">            &#125;</span><br><span class="line">            </span><br><span class="line">        &#125;   </span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">sale</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">synchronized</span>(ThreadSafeTest.lock)&#123;</span><br><span class="line">            <span class="keyword">if</span> (ThreadSafeTest.count &gt; <span class="number">0</span>) &#123;</span><br><span class="line">                --ThreadSafeTest.count;</span><br><span class="line">                System.out.println(Thread.currentThread().getName() + <span class="string">",出售第"</span> + (<span class="number">5</span> - ThreadSafeTest.count) + <span class="string">"张票"</span>);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        </span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">Thread-<span class="number">0</span>,出售第<span class="number">1</span>张票</span><br><span class="line">Thread-<span class="number">1</span>,出售第<span class="number">2</span>张票</span><br><span class="line">Thread-<span class="number">0</span>,出售第<span class="number">3</span>张票</span><br><span class="line">Thread-<span class="number">1</span>,出售第<span class="number">4</span>张票</span><br><span class="line">Thread-<span class="number">0</span>,出售第<span class="number">5</span>张票</span><br></pre></td></tr></table></figure>
+
+<p>我们对卖票的操作进行了加锁，加锁之后，就没有出现共享变量混乱的问题，那么<code>synchronized</code>到底是什么呢？怎么实现的共享变量内存可见呢？</p>
+<p><code>synchronized</code>块是Java提供的一种原子性内置锁，Java中的每个对象都可以把它当做一个同步锁来使用，这些Java内置的使用者看不到的锁被称为内部锁，也叫作监视器锁，线程的执行代码在进入<code>synchronized</code>代码块前会自动获取内部锁，这时候其他线程访问该同步代码块时会被阻塞挂起。拿到内部锁的线程会在正常退出同步代码块或者抛出异常后或者在同步块内调用了该内置锁资源的<code>wait</code>系列方法时释放该内置锁。内置锁是排它锁，也就是当一个线程获取这个锁后，其他线程必须等待该线程释放锁后才能获取该锁。</p>
+<p>由于共享变量内存可见性问题主要是由于线程的工作内存导致的，使用<code>synchronized</code>的时候，它的内存语义是什么样的呢？（也就是加锁和释放锁的语义）。</p>
+<p>进入<code>synchronized</code>块的内存语义（加锁）是把在<code>synchronized</code>共内使用到的共享变量从线程的工作内存中清除，这样在<code>synchronized</code>块内使用到该变量时就不会从线程的工作内存中获取，而是直接从主内存中获取。退出<code>synchronized</code>块的内存语义（释放锁）是把在<code>synchronized</code>块内对共享变量的修改刷新到主内存。</p>
+<p>除可以解决共享变量内存可见性问题外，synchronized 经常被用来实现原子性操作。另外请注意，synchronized 关键字会引起线程上下文切换并带来线程调度开销，所以使用锁太笨重，尤其是在Java1.6之前，没有对synchronized进行优化。对于内存可见性的问题，Java还提供了一种弱同步，也就是使用 <code>volatile</code> 关键字，这个由于篇幅问题，下一篇文章再讲吧。</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/11/24/Java并发编程（三）之线程池的使用/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1672,172 +1824,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/09/20/JS有特别的输出banana技巧/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="猫屎咖啡">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="猫屎咖啡">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/09/20/JS有特别的输出banana技巧/" itemprop="url">JS：我有特别的输出banana技巧</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-09-20T21:26:15+08:00">
-                2019-09-20
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>今天之前一个关系不错的同事发来一段很有意思的js代码，代码如下</p>
-<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">(<span class="string">'b'</span> + <span class="string">'a'</span> + + <span class="string">'a'</span> + <span class="string">'a'</span>).toLowerCase()</span><br></pre></td></tr></table></figure>
-
-<p>这段代码的输出为<code>banana</code>。</p>
-<p>大家都知道js的一些语法和规则都比较怪异，这段代码也不例外，那为什么这段代码会输出这样的结果呢？<br>这就与JavaScript运算符优先级相关了，我们先了解一下这段代码涉及到的运算符及其优先级，如下：</p>
-<table>
-<thead>
-<tr>
-<th align="center">优先级</th>
-<th align="center">运算类型</th>
-<th align="center">关联性</th>
-<th align="center">运算符</th>
-</tr>
-</thead>
-<tbody><tr>
-<td align="center">20</td>
-<td align="center">圆括号</td>
-<td align="center">n/a</td>
-<td align="center">(…)</td>
-</tr>
-<tr>
-<td align="center">16</td>
-<td align="center">一元正号</td>
-<td align="center">从右至左</td>
-<td align="center">+ …</td>
-</tr>
-<tr>
-<td align="center">13</td>
-<td align="center">加法</td>
-<td align="center">从左至右</td>
-<td align="center">… + …</td>
-</tr>
-</tbody></table>
-<p>OK，了解了上面的运算符优先级之后，我们来分析一下上面那段代码。</p>
-<p>首先<code>(&#39;b&#39; + &#39;a&#39; + + &#39;a&#39; + &#39;a&#39;)</code> ，按照运算符优先级分解一下运算步骤，<br>从上面优先级的表格我们可以看到圆括号的优先级最高，其次是一元正号（有人可能不太明白什么是一元正号，这里解释一下一元正号 <code>+</code> ，大家都知道一元负号 <code>-</code> ，比如说一个正数 <code>2</code> 前面加上一元负号运算符，就会变成负数 <code>-2</code> ，那么加上一元正号呢？变为 <code>+2</code> ，其实还是正数 <code>2</code>。一元正号，其实就是我们初中学正负数时候的正数前面省略的 <code>+</code> ）</p>
-<p>此段代码中运算优先级最低的就是加法运算，所以按照运算符优先级，代码可以转换成这个样子</p>
-<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">'b'</span> + <span class="string">'a'</span> + (+ <span class="string">'a'</span>) + <span class="string">'a'</span> <span class="comment">//因为一元正号的优先级比加法高，所以用括号标注一下</span></span><br></pre></td></tr></table></figure>
-
-<p>那么就会先运算 <code>(+ &#39;a&#39;)</code></p>
-<p>我们来看一下一元正号的说明：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">一元正号运算符位于其操作数前面，计算其操作数的数值，如果操作数不是一个数值，会尝试将其转换成一个数值。 尽管一元负号也能转换非数值类型，但是一元正号是转换其他对象到数值的最快方法，也是最推荐的做法，因为它不会对数值执行任何多余操作。它可以将字符串转换成整数和浮点数形式，也可以转换非字符串值 true，false 和 null。小数和十六进制格式字符串也可以转换成数值。负数形式字符串也可以转换成数值（对于十六进制不适用）。如果它不能解析一个值，则计算结果为 NaN。</span><br></pre></td></tr></table></figure>
-
-<p>请注意看这段话：<code>如果操作数不是一个数值，会尝试将其转换成一个数值和如果它不能解析一个值，则计算结果为 NaN</code></p>
-<p>那么<code>(+ &#39;a&#39;)</code>就会是变成 <code>NaN</code>，然后又涉及到了隐式转化，加号在JavaScript规则里有一条是，当操作符有一个是字符串类型时，另一个也要转成字符串类型。也就是说 <code>NaN</code> 要进行<code>toString</code>，然后原代码执行过程如下:</p>
-<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">'b'</span> + <span class="string">'a'</span> + (+ <span class="string">'a'</span>) + <span class="string">'a'</span></span><br><span class="line"><span class="comment">// to</span></span><br><span class="line"><span class="string">'b'</span> + <span class="string">'a'</span> + <span class="built_in">Number</span>(<span class="string">'a'</span>) + <span class="string">'a'</span></span><br><span class="line"><span class="comment">// to</span></span><br><span class="line"><span class="string">'b'</span> + <span class="string">'a'</span> + <span class="literal">NaN</span> + <span class="string">'a'</span></span><br><span class="line"><span class="comment">//to</span></span><br><span class="line"><span class="string">'b'</span> + <span class="string">'a'</span> + <span class="string">'NaN'</span> + <span class="string">'a'</span></span><br></pre></td></tr></table></figure>
-
-<p>最终再调用 <code>toLowerCase()</code> 将其转换为小写，就变成了 <code>banana</code></p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -1888,7 +1874,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">13</span>
+                  <span class="site-state-item-count">14</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>

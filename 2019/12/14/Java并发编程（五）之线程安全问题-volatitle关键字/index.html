@@ -86,14 +86,14 @@
 <meta name="description" content="上一篇提到了共享变量的线程安全问题，我们使用synchronized关键字来保证了共享变量的线程安全，这次我们来看看volatitle关键字。 当一个变量被声明为volatitle时，线程在写入变量的时候就不会把值缓存在寄存器或者一级二级缓存（Java内存模型中的工作内存），而是直接刷新回主内存，当其他线程读取该共享变量时，会从主内存直接获取最新的值，而不是从自己的工作内存中获取变量值。 我们看看">
 <meta name="keywords" content="多线程,并发,Java">
 <meta property="og:type" content="article">
-<meta property="og:title" content="Java并发编程（四）之线程安全问题-volatitle关键字">
+<meta property="og:title" content="Java并发编程（五）之线程安全问题-volatitle关键字">
 <meta property="og:url" content="http://yoursite.com/2019/12/14/Java并发编程（五）之线程安全问题-volatitle关键字/index.html">
 <meta property="og:site_name" content="猫屎咖啡">
 <meta property="og:description" content="上一篇提到了共享变量的线程安全问题，我们使用synchronized关键字来保证了共享变量的线程安全，这次我们来看看volatitle关键字。 当一个变量被声明为volatitle时，线程在写入变量的时候就不会把值缓存在寄存器或者一级二级缓存（Java内存模型中的工作内存），而是直接刷新回主内存，当其他线程读取该共享变量时，会从主内存直接获取最新的值，而不是从自己的工作内存中获取变量值。 我们看看">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:updated_time" content="2020-04-20T01:06:46.376Z">
+<meta property="og:updated_time" content="2020-04-20T01:34:11.199Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Java并发编程（四）之线程安全问题-volatitle关键字">
+<meta name="twitter:title" content="Java并发编程（五）之线程安全问题-volatitle关键字">
 <meta name="twitter:description" content="上一篇提到了共享变量的线程安全问题，我们使用synchronized关键字来保证了共享变量的线程安全，这次我们来看看volatitle关键字。 当一个变量被声明为volatitle时，线程在写入变量的时候就不会把值缓存在寄存器或者一级二级缓存（Java内存模型中的工作内存），而是直接刷新回主内存，当其他线程读取该共享变量时，会从主内存直接获取最新的值，而不是从自己的工作内存中获取变量值。 我们看看">
 
 
@@ -130,7 +130,7 @@
 
 
 
-  <title>Java并发编程（四）之线程安全问题-volatitle关键字 | 猫屎咖啡</title>
+  <title>Java并发编程（五）之线程安全问题-volatitle关键字 | 猫屎咖啡</title>
   
 
 
@@ -274,7 +274,7 @@
 
         
         
-          <h1 class="post-title" itemprop="name headline">Java并发编程（四）之线程安全问题-volatitle关键字</h1>
+          <h1 class="post-title" itemprop="name headline">Java并发编程（五）之线程安全问题-volatitle关键字</h1>
         
 
         <div class="post-meta">
@@ -398,6 +398,10 @@
 
           <div class="post-nav-prev post-nav-item">
             
+              <a href="/2020/04/20/Java并发编程（六）之synchronized与volatile关键字/" rel="prev" title="Java并发编程（六）之synchronized关键字原理">
+                Java并发编程（六）之synchronized关键字原理 <i class="fa fa-chevron-right"></i>
+              </a>
+            
           </div>
         </div>
       
@@ -464,7 +468,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">15</span>
+                  <span class="site-state-item-count">16</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>

@@ -253,6 +253,166 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/04/20/Java并发编程（六）之synchronized与volatile关键字/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="猫屎咖啡">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="猫屎咖啡">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2020/04/20/Java并发编程（六）之synchronized与volatile关键字/" itemprop="url">Java并发编程（六）之synchronized关键字原理</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2020-04-20T09:34:04+08:00">
+                2020-04-20
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>之前我们说过在线程安全问题中如何使用<code>synchronized</code>关键字，现在我们看看，此关键字的原理是什么。</p>
+<p>在多线程并发编程中<code>synchronized</code>一直是元老级的应用，虽说之前Java的版本中，这是一个重量级的锁，但是<code>Java SE 1.6</code>版本对此关键字进行了各种优化，有些情况下，它就表现的没那么笨重了。</p>
+<p>先来看下利用synchronized实现同步的基础：Java中的每一个对象都可以作为锁。具体表现为以下3种形式。</p>
+<ol>
+<li>对于普通同步方法，锁是当前实例对象。</li>
+<li>对于静态同步方法，锁是当前类的Class对象。</li>
+<li>对于同步方法块，锁是Synchonized括号里配置的对象。</li>
+</ol>
+<p>当一个线程试图访问同步代码块时，它首先必须得到锁，退出或抛出异常时必须释放锁。若是线程在退出或者抛出异常的时候没有释放锁，那么共享资源将不会被释放，其他线程不能访问，程序就会陷入死锁。</p>
+<p>在JVM中，同步的实现是通过监视器锁，也就是<code>Monitor</code>对象的进入和退出实现的。要么显示得通过 <code>monitorenter</code> 和 <code>monitorexit</code> 指令实现，要么隐示地通过方法调用和返回指令实现。</p>
+<p>对于Java代码来说，或许最常用的同步实现就是同步方法。其中同步代码块是通过使用 <code>monitorenter</code> 和 <code>monitorexit</code> 实现的，而同步方法却是使用 <code>ACC_SYNCHRONIZED</code> 标记符隐示的实现，原理是通过方法调用指令检查该方法在常量池中是否包含 <code>ACC_SYNCHRONIZED</code> 标记符(这个我还没有去了解，所以就先略过，之后了解了再一起学习吧！)</p>
+<p><code>monitorenter</code>指令是在编译后插入到同步代码块的开始位置，而<code>monitorexit</code>是插入到方法结束处和异常处，JVM要保证每个<code>monitorenter</code>必须有对应的<code>monitorexit</code>与之配对。任何对象都有一个<code>monitor</code>与之关联，当且一个<code>monitor</code>被持有后，它将处于锁定状态。线程执行到<code>monitorenter</code>指令时，将会尝试获取对象所对应的<code>monitor</code>的所有权，即尝试获得对象的锁。线程执行到<code>monitorexit</code>指令时，将会释放对象所对应的<code>monitor</code>的所有权。</p>
+<p>举个具体的例子看下</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">SynchronizedDemo</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">synchronized</span> <span class="keyword">void</span> <span class="title">staticMethod</span><span class="params">()</span> <span class="keyword">throws</span> InterruptedException </span>&#123;</span><br><span class="line">        System.out.println(<span class="string">"静态同步方法开始"</span>);</span><br><span class="line">        Thread.sleep(<span class="number">1000</span>);</span><br><span class="line">        System.out.println(<span class="string">"静态同步方法结束"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">synchronized</span> <span class="keyword">void</span> <span class="title">method</span><span class="params">()</span> <span class="keyword">throws</span> InterruptedException </span>&#123;</span><br><span class="line">        System.out.println(<span class="string">"实例同步方法开始"</span>);</span><br><span class="line">        Thread.sleep(<span class="number">1000</span>);</span><br><span class="line">        System.out.println(<span class="string">"实例同步方法结束"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">synchronized</span> <span class="keyword">void</span> <span class="title">method2</span><span class="params">()</span> <span class="keyword">throws</span> InterruptedException </span>&#123;</span><br><span class="line">        System.out.println(<span class="string">"实例同步方法2开始"</span>);</span><br><span class="line">        Thread.sleep(<span class="number">3000</span>);</span><br><span class="line">        System.out.println(<span class="string">"实例同步方法2结束"</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">method3</span><span class="params">()</span> <span class="keyword">throws</span> InterruptedException </span>&#123;</span><br><span class="line">        <span class="keyword">synchronized</span>(<span class="keyword">this</span>)&#123;</span><br><span class="line">            System.out.println(<span class="string">"同步代码块方法3开始"</span>);</span><br><span class="line">            Thread.sleep(<span class="number">3000</span>);</span><br><span class="line">            System.out.println(<span class="string">"同步代码块方法3结束"</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        </span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">final</span> SynchronizedDemo synDemo = <span class="keyword">new</span> SynchronizedDemo();</span><br><span class="line">        Thread thread1 = <span class="keyword">new</span> Thread(() -&gt; &#123;</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">               synDemo.method();</span><br><span class="line">            &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">                e.printStackTrace();</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;);</span><br><span class="line">        Thread thread2 = <span class="keyword">new</span> Thread(() -&gt; &#123;</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">                synDemo.method2();</span><br><span class="line">            &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">                e.printStackTrace();</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;);</span><br><span class="line">        thread1.start();</span><br><span class="line">        thread2.start();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>使用<code>javac SynchronizedDemo.java</code>编译一下，然后使用<code>javap -v SynchronizedDemo</code>反编译class文件，可以看到行号、本地变量表信息、反编译汇编代码，还会输出当前类用到的常量池等信息。</p>
+<p>我们看一下反编译之后的同步方法与同步代码块</p>
+<ol>
+<li>同步方法<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">synchronized</span> <span class="keyword">void</span> <span class="title">method2</span><span class="params">()</span> <span class="keyword">throws</span> java.lang.InterruptedException</span>;</span><br><span class="line">    descriptor: ()V</span><br><span class="line">    flags: ACC_PUBLIC, ACC_SYNCHRONIZED</span><br><span class="line">    Code:</span><br><span class="line">      stack=<span class="number">2</span>, locals=<span class="number">1</span>, args_size=<span class="number">1</span></span><br><span class="line">         0: getstatic     #2                  // Field java/lang/System.out:Ljava/io/PrintStream;</span><br><span class="line">         3: ldc           #11                 // String 实例同步方法2开始</span><br><span class="line">         5: invokevirtual #4                  // Method java/io/PrintStream.println:(Ljava/lang/String;)V</span><br><span class="line">         8: ldc2_w        #12                 // long 3000l</span><br><span class="line">        11: invokestatic  #7                  // Method java/lang/Thread.sleep:(J)V</span><br><span class="line">        14: getstatic     #2                  // Field java/lang/System.out:Ljava/io/PrintStream;</span><br><span class="line">        17: ldc           #14                 // String 实例同步方法2结束</span><br><span class="line">        19: invokevirtual #4                  // Method java/io/PrintStream.println:(Ljava/lang/String;)V</span><br><span class="line">        <span class="number">22</span>: <span class="keyword">return</span></span><br><span class="line">      LineNumberTable:</span><br><span class="line">        line <span class="number">13</span>: <span class="number">0</span></span><br><span class="line">        line <span class="number">14</span>: <span class="number">8</span></span><br><span class="line">        line <span class="number">15</span>: <span class="number">14</span></span><br><span class="line">        line <span class="number">16</span>: <span class="number">22</span></span><br><span class="line">    Exceptions:</span><br><span class="line">      <span class="keyword">throws</span> java.lang.InterruptedException</span><br></pre></td></tr></table></figure>
+
+</li>
+</ol>
+<p>可以看到，同步方法<code>flags</code>包含一个<code>ACC_SYNCHCRONIZED</code>标记符<br>区别于同步代码块的监视器实现，同步方法通过使用 <code>ACC_SYNCHRONIZED</code> 标记符隐示的实现<br>原理是通过方法调用指令检查该方法在常量池中是否包含 <code>ACC_SYNCHRONIZED</code> 标记符，如果有，JVM 要求线程在调用之前请求锁</p>
+<ol start="2">
+<li>同步代码块<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">method3</span><span class="params">()</span> <span class="keyword">throws</span> java.lang.InterruptedException</span>;</span><br><span class="line">    descriptor: ()V</span><br><span class="line">    flags: ACC_PUBLIC</span><br><span class="line">    Code:</span><br><span class="line">      stack=<span class="number">2</span>, locals=<span class="number">3</span>, args_size=<span class="number">1</span></span><br><span class="line">         <span class="number">0</span>: aload_0</span><br><span class="line">         <span class="number">1</span>: dup</span><br><span class="line">         <span class="number">2</span>: astore_1</span><br><span class="line">         <span class="number">3</span>: monitorenter</span><br><span class="line">         4: getstatic     #2                  // Field java/lang/System.out:Ljava/io/PrintStream;</span><br><span class="line">         7: ldc           #15                 // String 同步代码块方法3开始</span><br><span class="line">         9: invokevirtual #4                  // Method java/io/PrintStream.println:(Ljava/lang/String;)V</span><br><span class="line">        12: ldc2_w        #12                 // long 3000l</span><br><span class="line">        15: invokestatic  #7                  // Method java/lang/Thread.sleep:(J)V</span><br><span class="line">        18: getstatic     #2                  // Field java/lang/System.out:Ljava/io/PrintStream;</span><br><span class="line">        21: ldc           #16                 // String 同步代码块方法3结束</span><br><span class="line">        23: invokevirtual #4                  // Method java/io/PrintStream.println:(Ljava/lang/String;)V</span><br><span class="line">        <span class="number">26</span>: aload_1</span><br><span class="line">        <span class="number">27</span>: monitorexit</span><br><span class="line">        <span class="number">28</span>: goto          <span class="number">36</span></span><br><span class="line">        <span class="number">31</span>: astore_2</span><br><span class="line">        <span class="number">32</span>: aload_1</span><br><span class="line">        <span class="number">33</span>: monitorexit</span><br><span class="line">        <span class="number">34</span>: aload_2</span><br><span class="line">        <span class="number">35</span>: athrow</span><br><span class="line">        <span class="number">36</span>: <span class="keyword">return</span></span><br><span class="line">      Exception table:</span><br><span class="line">         from    to  target type</span><br><span class="line">             <span class="number">4</span>    <span class="number">28</span>    <span class="number">31</span>   any</span><br><span class="line">            <span class="number">31</span>    <span class="number">34</span>    <span class="number">31</span>   any</span><br><span class="line">      LineNumberTable:</span><br><span class="line">        line <span class="number">19</span>: <span class="number">0</span></span><br><span class="line">        line <span class="number">20</span>: <span class="number">4</span></span><br><span class="line">        line <span class="number">21</span>: <span class="number">12</span></span><br><span class="line">        line <span class="number">22</span>: <span class="number">18</span></span><br><span class="line">        line <span class="number">23</span>: <span class="number">26</span></span><br><span class="line">        line <span class="number">25</span>: <span class="number">36</span></span><br><span class="line">      StackMapTable: number_of_entries = <span class="number">2</span></span><br><span class="line">        frame_type = <span class="number">255</span> <span class="comment">/* full_frame */</span></span><br><span class="line">          offset_delta = <span class="number">31</span></span><br><span class="line">          locals = [ class SynchronizedDemo, class java/lang/Object ]</span><br><span class="line">          stack = [ class java/lang/Throwable ]</span><br><span class="line">        frame_type = <span class="number">250</span> <span class="comment">/* chop */</span></span><br><span class="line">          offset_delta = <span class="number">4</span></span><br><span class="line">    Exceptions:</span><br><span class="line">      <span class="keyword">throws</span> java.lang.InterruptedException</span><br></pre></td></tr></table></figure>
+
+</li>
+</ol>
+<p>可以看到，在<code>flags</code>中没有了<code>ACC_SYNCHCRONIZED</code>标记符，并且在<code>Code</code>中包含了<code>monitorenter</code>和<code>monitorexit</code>，并且<code>monitorenter</code>在同步代码开始之前，<code>monitorexit</code>在同步代码结束之后。（可以看到，里面有两次<code>monitorexit</code>，这是因为第1次为同步正常退出释放锁；第2次为发生异步退出释放锁；这上面锁住的就是this。）</p>
+<p>简单说明一下<code>monitorenter</code>和<code>monitorexit</code></p>
+<ol>
+<li><p>monitorenter：每个对象都是一个监视器锁（monitor）。当monitor被占用时就会处于锁定状态，线程执行monitorenter指令时尝试获取monitor的所有权，过程如下：</p>
+<ul>
+<li>如果monitor的进入数为0，则该线程进入monitor，然后将进入数设置为1，该线程即为monitor的所有者；</li>
+<li>如果线程已经占有该monitor，只是重新进入，则进入monitor的进入数加1；（只有首先获得锁的线程才能允许继续获取多个锁）</li>
+<li>如果其他线程已经占用了monitor，则该线程进入阻塞状态，直到monitor的进入数为0，再重新尝试获取monitor的所有权；</li>
+</ul>
+</li>
+<li><p>monitorexit：执行monitorexit指令的线程必须是对象实例所对应的监视器的所有者，指令执行时，线程会先将进入次数-1，若-1之后进入次数变成0，则线程退出监视器(即释放锁)，其他阻塞在该监视器的线程可以重新竞争该监视器的所有权</p>
+</li>
+</ol>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/12/14/Java并发编程（五）之线程安全问题-volatitle关键字/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -272,7 +432,7 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/2019/12/14/Java并发编程（五）之线程安全问题-volatitle关键字/" itemprop="url">Java并发编程（四）之线程安全问题-volatitle关键字</a></h1>
+                <a class="post-title-link" href="/2019/12/14/Java并发编程（五）之线程安全问题-volatitle关键字/" itemprop="url">Java并发编程（五）之线程安全问题-volatitle关键字</a></h1>
         
 
         <div class="post-meta">
@@ -1661,151 +1821,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/10/09/求一个整数转换为二进制之后其中1的个数/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="猫屎咖啡">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="猫屎咖啡">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/10/09/求一个整数转换为二进制之后其中1的个数/" itemprop="url">求一个整数转换为二进制之后其中1的个数</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-10-09T19:20:01+08:00">
-                2019-10-09
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>今天面试摩拜单车遇到一道算法题，题目如下：</p>
-<p>给定一个正整数范围(m,n)，返回一个数组，该数组是每个正整数转换为相应二进制之后包含1的个数</p>
-<blockquote>
-<p>示例</p>
-</blockquote>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">给定 (1,5) ， </span><br><span class="line">1的二进制位1，二进制表示中包含位1的个数位1，</span><br><span class="line">2的二进制位10，二进制表示中包含位1的个数位1，</span><br><span class="line">3的二进制为11，二进制表示中包含位1的个数位2，</span><br><span class="line">4的二进制位100，二进制表示中包含位1的个数位1，</span><br><span class="line">5的二进制位101，二进制表示中包含位1的个数位2，</span><br><span class="line">所以返回数组 [1，1，2，1，2]</span><br></pre></td></tr></table></figure>
-
-<p>这道题有点像LeetCode上<code>位1的个数</code>这道题目。</p>
-<p>那么怎么解决呢？</p>
-<p>最简单的方法就是，求出每一个数二进制中位1的个数，拼成一个数组，那么如何求出正整数中二进制位1的个数呢？</p>
-<p>重点就是求每个数的位1的个数。</p>
-<p>这里就要用到位运算了。大家初中高中或者大学学计算机基础的时候应该都学过基础位运算，也就是<code>与</code>，<code>或</code>，<code>非</code>的运算。(还有一些比较复杂的，例如<code>异或</code>，<code>与非</code>等组合位运算)</p>
-<p>代码如下：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">int</span> <span class="title">NumberOfOne</span><span class="params">(<span class="keyword">int</span> n)</span></span>&#123;</span><br><span class="line">    <span class="keyword">int</span> count = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">while</span> (n != <span class="number">0</span>) &#123;</span><br><span class="line">        count++;</span><br><span class="line">        n &amp;= (n - <span class="number">1</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> count;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>我们不断把数字最后一个 <code>1</code> 反转，并把答案加一。当数字变成 <code>0</code> 的时候偶，我们就知道它没有 <code>1</code> 的位了，此时返回答案。</p>
-<p>这里关键的想法是对于任意数字 <code>n</code> ，将 <code>n</code> 和 <code>n-1</code>做与运算，会把最后一个 <code>1</code> 的位变成 <code>0</code> 。为什么？考虑 <code>n</code> 和 <code>n−1</code> 的二进制表示。</p>
-<p>我们来详细解读一下 <code>n &amp; (n - 1)</code></p>
-<ol>
-<li>假设<code>n=5</code>,<code>n &amp; (n - 1)</code>就是<code>5&amp;4</code>，转换为二进制就是 <code>101&amp;100=100</code></li>
-<li>假设<code>n=4</code>,<code>n &amp; (n - 1)</code>就是<code>4&amp;3</code>，转换为二进制就是 <code>100&amp;011=000</code></li>
-</ol>
-<p>可以看到，每一次<code>n&amp;(n-1)</code>的操作就会把n中的位1减少一位，为什么呢？因为二进制，无论数字是多少，在二进制运算中，只要做了-1的操作，就会改变最后一位的值，1变为0或者0变为1.</p>
-<p>1变为0就是上面<code>1</code>的情况，<br>0变为1就是上面<code>2</code>的情况。</p>
-<p>可以发现，由于每次<code>- 1</code>操作都会带了位的变化，所以每次<code>n&amp;n-1</code>,都会把二进制中<code>最后的一位1</code>消除掉，比如<code>101&amp;100=100</code>，消除了<code>101</code>最后的1变为<code>100</code>，<code>100&amp;011=000</code>，消除了<code>100</code>最后的<code>1</code>，也是惟一的1变为<code>000</code>。所以，当我们不断把<code>n&amp;=n-1</code>，直到<code>n=0</code>的时候，n中的位1就被完全消除了，这个操作做了几次，也就代表n转换为二进制，其中位1的个数有几个。</p>
-<p>看到这里，这道题最重要的问题就解决了，剩下的工作就是写个for循环将每位数的结果封装成一个数组就行了，for循环很简单，这里就不再赘述了。</p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -1856,7 +1871,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">15</span>
+                  <span class="site-state-item-count">16</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>

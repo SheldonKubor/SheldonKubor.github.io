@@ -253,6 +253,147 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/04/22/Java并发编程（八）之CAS操作/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="猫屎咖啡">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="猫屎咖啡">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2020/04/22/Java并发编程（八）之CAS操作/" itemprop="url">Java并发编程（八）之CAS操作</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2020-04-22T10:17:18+08:00">
+                2020-04-22
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>学习<code>CAS</code>之前，先了解一下什么是原子性操作，所谓的原子性操作，是指进行一系列操作的时候，这一系列操作要么全部执行，要么全部不执行，不会出现只执行一部分的情况。</p>
+<p>例如，我们对一个变量进行+1（例如<code>x++</code>）操作的时候，首先要读取当前变量值，然后+1，然后再将新值赋值给该变量。这就是一个<code>读-改-写</code>的过程。如果这个过程不是原子性的，那么久就会出现线程安全问题。虽然<code>x++</code>只有一行代码，但是其中的操作并不是一步而成的，其操作不是原子性的。</p>
+<p>通过之前所学，我们知道<code>synchronized</code>关键字可以解决线程安全问题，也就是<code>内存可见性</code>与<code>原子性</code>。但是<code>synchronized</code>是独占锁，没有获取到锁的线程将会被阻塞，会降低程序性能。例如下面代码：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ThreadSafeCount</span></span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">int</span> value;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">synchronized</span> <span class="keyword">int</span> <span class="title">getCount</span><span class="params">()</span></span>&#123;</span><br><span class="line">        <span class="keyword">return</span> value;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">synchronized</span> <span class="keyword">void</span> <span class="title">incCount</span><span class="params">()</span></span>&#123;</span><br><span class="line">        value++;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>可以看到两个方法都加了锁，但是同一时间只能有一个线程来调用，其中<code>getCount</code>方法是只读方法，多个线程同时调用不会有线程安全问题，但是加了synchronized关键字之后，同一时间只能有一个线程来调用，降低了并发性能。那能不能去掉这个关键字呢，也不能去掉，因为我们还需要synchronized来保证内存可见性。</p>
+<h3 id="CAS操作"><a href="#CAS操作" class="headerlink" title="CAS操作"></a>CAS操作</h3><p>我们学过两个关键字<code>synchronized</code>与<code>volatile</code>，两者都可以解决共享变量内存可见性的问题，但是，<code>volatile</code>不能解决<code>读-改-写</code>等原子性的问题，<code>synchronized</code>能够解决原子性问题，但是其性能开销大。</p>
+<p>CAS操作是<code>Compare And Swap</code>，是JDK提供的非阻塞原子性操作，通过硬件保证了<code>比较-更新</code>操作的原子性。JDK里面的<code>Unsafe</code>类提供了一系列<code>compareAndSwap*</code>方法，比如<code>compareAndSwapInt</code>和<code>compareAndSwapLong</code>。下面我们以<code>compareAndSwapLong</code>为例子进行简单介绍。</p>
+<p><code>boolean compareAndSwapLong(Object obj,long valueOffset,long expect,long update)</code>方法：四个参数，含义分别是：对象内存位置，对象中变量的偏移量，变量的预期值，新的值。其操作的含义是，若对象<code>obj</code>中内存偏移量为<code>valueOffset</code>的变量值为<code>expect</code>，则用新的值<code>update</code>替换旧的值，也就是替换<code>expect</code>。这是处理器提供的一个原子性命令。</p>
+<p>CAS操作虽然很高效地解决了原子操作，但是仍然存在三大问题：<code>ABA问题</code>、<code>循环开销时间大</code>、<code>只能保证一个共享变量的原子操作</code></p>
+<ol>
+<li>ABA问题<br>CAS在操作值得时候，会检查值有没有发生变化，如果没有发生变化就更新。若是一个值原来是A，变成了B，后来又变回了A（举例：线程1获取变量值为A后，在执行CAS之前，线程2使用CAS修改变量的值为B，然后又修改变量值为A），那么使用CAS操作时检查其值得结果是没有变化，但其实是变化了，虽然线程1执行CAS操作时变量的值为A，但是这个A已经不是线程1获取变量值时的A了，这就是ABA问题。</li>
+</ol>
+<p>看起来好像最后还是正确的修改了变量值，但其实是丢失了变量值得修改记录。此问题的解决方案就是使用版本号，在变量前面追加上版本号，每次变量更新的时候把版本号+1，这样<code>A-B-A</code>就会变为<code>1A-2B-3A</code>。从Java1.5开始，JDK的Atomic包里就提供了一个类<code>AtomicStampedReference</code>来解决ABA问题，其中<code>compareAndSet</code>方法的作用就是，先检查当前引用是否等于预期引用，并检查当前标志是否等于预期标志，如果全部相等，就进行更新。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">compareAndSet</span><span class="params">(V expectedReference,//预期引用</span></span></span><br><span class="line"><span class="function"><span class="params">                                V newReference,//更新后引用</span></span></span><br><span class="line"><span class="function"><span class="params">                                <span class="keyword">int</span> expectedStamp,//当前标志</span></span></span><br><span class="line"><span class="function"><span class="params">                                <span class="keyword">int</span> newStamp)</span><span class="comment">//更新后标志</span></span></span><br></pre></td></tr></table></figure>
+
+<ol start="2">
+<li><p>循环时间长，开销大<br>自旋CAS如果长时间不成功，会给CPU带来非常大的开销。</p>
+</li>
+<li><p>只能保证一个共享变量的原子操作<br>当对一个共享变量执行操作的时候，我们可以使用CAS的方式来保证原子操作，但是对多个共享变量操作时，循环CAS就无法保证操作的原子性，这个时候就可以用锁。从Java1.5开始，JDK的Atomic包里就提供了一个类<code>AtomicReference</code>类来保证引用对象直接的原子性，就可以多个变量放在一个对象里来进行CAS操作。</p>
+</li>
+</ol>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/04/20/Java并发编程（七）之各种锁/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1661,168 +1802,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/10/23/Redis中的数据结构之简单动态字符串/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="猫屎咖啡">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="猫屎咖啡">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/10/23/Redis中的数据结构之简单动态字符串/" itemprop="url">Redis中的数据结构之简单动态字符串</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-10-23T20:57:21+08:00">
-                2019-10-23
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>前段时间学习Redis，在网上一搜Redis教程，绝大部分的教程都是在教你怎么使用Redis，比如如何set/get一个字符串，Redis列表怎么添加（获取）值等基础用法，这些就相当于我们学习一门计算机语言的语法过程。简单浏览一遍就好了，用到的时候不记得了再去查。（当然你如果记忆力强悍，全部记住也是极好的，省去了查百度的时间，提高了效率）。这些基础的语法知识，个人感觉没有什么含金量，熟悉编程的人几乎大部分人一看就懂。</p>
-<p>所以，我们要学习里面涉及到的原理知识，素闻Redis中的数据结构异常牛B，我呢就找了一本书《Redis设计与实现》来学习，在此也记录一下，加深一下印象，也分享一下学习笔记。</p>
-<p>首先我们来学习Redis中最简单的数据结构 <code>SDS</code>，也就是 <code>simple dynamic string</code>，翻译过来就是 <code>简单动态字符串</code>。正如其名字所说的，这种数据结构是一个简单的，动态的(可以被修改值)的字符串。</p>
-<p>当Redis需要的不仅仅是一个字符串字面量，而是需要一个可以被修改的字符串的时候，Redis就会使用SDS来表示字符串的值。比如在Redis中，包含字符串值的键值对在底层都是由SDS实现的。</p>
-<p>举个例子，在Redis客户端执行如下命令：</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">redis&gt;</span> set msg "hello word"</span><br><span class="line">OK</span><br></pre></td></tr></table></figure>
-
-<p>这个命令大家都很熟悉，这在Redis中创建了一个新的键值对，键为<code>msg</code>，值就是我们最熟悉的<code>hello world</code>。其中，<code>msg</code>是一个字符串，<code>hello world</code>也是一个字符串。上面说了，包含字符串值的键值对在底层都是由SDS实现的。<br>所以</p>
-<ul>
-<li>键值对的键 <code>msg</code>是一个字符串对象，底层的实现是一个保存着字符串<code>msg</code>的SDS</li>
-<li>键值对的值 <code>hello world</code>也是一个字符串对象，底层的实现是一个保存着字符串<code>hello world</code>的SDS</li>
-</ul>
-<p>再举个例子：</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">redis&gt;</span> rpush fruits "apple" "banana" "cherry"</span><br></pre></td></tr></table></figure>
-
-<p>这个命令大家也知道，在Redis中创建了一个列表，其实也是一个键值对，键为<code>fruits</code>，值为<code>&quot;apple&quot; &quot;banana&quot; &quot;cherry&quot;</code>，其中：</p>
-<ul>
-<li>键值对的键 <code>fruits</code>是一个字符串对象，底层的实现是一个保存着字符串<code>fruits</code>的SDS</li>
-<li>键值对的值 <code>&quot;apple&quot; &quot;banana&quot; &quot;cherry&quot;</code>是一个列表对象，其中包含了三个字符串对象，这三个字符串对象分别由三个SDS实现：第一个SDS保存着”apple”，第二个SDS保存着”banana”，第三个SDS保存着”cherry”</li>
-</ul>
-<p>除了用来保存Redis中的字符串值之外，SDS还被用作缓冲区，这个以后我们再说。</p>
-<p>说了一些SDS在Redis中的应用，那么，SDS的数据结构到底是什么样子呢？</p>
-<p>我们来看一下SDS的数据结构定义代码：</p>
-<ul>
-<li>注：此书基于的Redis版本不是最新的，最新的版本中，SDS的数据结构做了一些优化，但是大同小异，大家有兴趣可以去github看Redis最新的源码。<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">sdshdr</span> &#123;</span></span><br><span class="line">    <span class="keyword">int</span> len; <span class="comment">//记录buf数组中已使用的字节数量，等于SDS所保存的字符串长度</span></span><br><span class="line">    <span class="keyword">int</span> <span class="built_in">free</span>; <span class="comment">//记录buf数组中未使用的字节数量</span></span><br><span class="line">    <span class="keyword">char</span> buf[]; <span class="comment">//字节数组，用来保存字符串的值</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<p>比如我们定义一个字符串“Redis”，在SDS中会怎么存储呢？<br><img src="/pic_doc/redis_sds.jpeg" alt> </p>
-<ol>
-<li>free属性的值为0，表示这个SDS没有分配任何未使用空间。</li>
-<li>len属性值为5，表示这个SDS保存了一个长度为5的字符串</li>
-<li>buf属性是一个char类型的数组，数组的前五个元素分别保存了 ‘R’,’e’,’d’,’i’,’s’ 五个字符，而最后一个元素则保存了空字符’\0’。</li>
-</ol>
-<p>学过c语言的都知道，c语言中字符串的结尾惯例就是一个空字符 <code>\0</code>，Redis是用c语言编写的，所以遵循c语言字符串结尾的规范。大家可以看到结尾的空字符<code>\0</code>虽然占用了一个字符的空间，但不计算在SDS的len属性里面，所以这个空字符串对于SDS的使用者是完全透明的，这样的好处是SDS可以直接重用一部分c语言字符串库中的函数。比如 <code>&lt;stdio.h&gt;/printf</code>函数。</p>
-<p>说完SDS的数据结构，大家肯定知道了SDS中的<code>len</code>与<code>buf[]</code>属性的含义，但可能不知道<code>free</code>是用来做什么的，我们暂时不讨论这个，下一篇再详细说明。</p>
-<p>既然Redis是用c语言编写的，那么保存字符串的时候为什么不用c语言中的表示方式呢？为何还要定义一个SDS呢？</p>
-<p>我们先来看一下”Redis”这个字符串在c语言中的表示<br><img src="/pic_doc/redis_c_string.jpeg" alt></p>
-<p>可以看到，c语言使用的这种简单的字符串表示方式，没有记录字符串自身的长度信息，也就是没有SDS中的<code>len</code>属性。想一下若是在c语言中获取这个字符串的长度该怎么获取呢？</p>
-<p>只有一种方法，那就是循环遍历整个字符串，对遇到的每个字符进行计数，直到遇到代表字符串结尾的空字符<code>\0</code>为止。这个操作的时间复杂度为<code>O(n)</code>，虽然这个复杂度看起来并不是很高，但是还是满足不了Redis在效率性方面的要求（众所周知，Redis的应用场景大部分都会面临海量的并发，对其性能要求很高）。</p>
-<p>那么SDS在获取字符串长度时候的时间复杂度是多少呢？因为SDS在len属性中记录了SDS本身字符串的长度，所以获取字符串长度只需要访问SDS的len属性，所以时间复杂度为<code>O(1)</code>。</p>
-<p>可以看到，通过使用SDS而非c语言中的字符串，Redis将获取字符串的时间复杂度从<code>O(n)</code>降到了<code>O(1)</code>，所以这确保了获取字符串长度的工作不会成为Redis的性能瓶颈。</p>
-<p>当然，SDS与c字符串相比并不只是满足Redis在效率方面的要求，也满足了Redis对安全性以及功能方面的要求，这个我们下期再说吧。</p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -1873,7 +1852,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">17</span>
+                  <span class="site-state-item-count">18</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>

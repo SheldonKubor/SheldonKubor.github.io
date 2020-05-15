@@ -156,6 +156,201 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/05/15/Java%E4%BB%A3%E7%90%86%E6%A8%A1%E5%BC%8F/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="猫屎咖啡">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="猫屎咖啡">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/05/15/Java%E4%BB%A3%E7%90%86%E6%A8%A1%E5%BC%8F/" class="post-title-link" itemprop="url">Java代理模式</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+              
+
+              <time title="Created: 2020-05-15 10:17:17 / Modified: 11:06:14" itemprop="dateCreated datePublished" datetime="2020-05-15T10:17:17+08:00">2020-05-15</time>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>代理模式的含义是，给某一个对象提供一个代理，并由代理对象来控制对真实对象的访问。代理模式是一种结构型设计模式。</p>
+<p>代理模式角色分为 3 种：</p>
+<p>Subject（抽象主题角色）：定义代理类和真实主题的公共对外方法，也是代理类代理真实主题的方法；</p>
+<p>RealSubject（真实主题角色）：真正实现业务逻辑的类；</p>
+<p>Proxy（代理主题角色）：用来代理和封装真实主题；</p>
+<p>先来看看静态代理</p>
+<p>编写一个接口（抽象主题角色）</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">UserService</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">select</span><span class="params">()</span></span>;   </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">update</span><span class="params">()</span></span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>然后编写该接口的实现类（真实主题角色）</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">UserServiceImpl</span> <span class="keyword">implements</span> <span class="title">UserService</span> </span>&#123;  </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">select</span><span class="params">()</span> </span>&#123;  </span><br><span class="line">        System.out.println(<span class="string">"查询 selectById"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">update</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        System.out.println(<span class="string">"更新 update"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>写一个代理类 UserServiceProxy（代理主题角色），代理类需要实现<code>UserService</code>，对<code>UserServiceImpl</code>进行功能一些增强</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">UserServiceProxy</span> <span class="keyword">implements</span> <span class="title">UserService</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> UserService target; <span class="comment">// 被代理的对象</span></span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">UserServiceProxy</span><span class="params">(UserService target)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.target = target;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">select</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        before();</span><br><span class="line">        target.select();    <span class="comment">// 这里才实际调用真实主题角色的方法</span></span><br><span class="line">        after();</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">update</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        before();</span><br><span class="line">        target.update();    <span class="comment">// 这里才实际调用真实主题角色的方法</span></span><br><span class="line">        after();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">before</span><span class="params">()</span> </span>&#123;     <span class="comment">// 在执行方法之前执行</span></span><br><span class="line">        System.out.println(String.format(<span class="string">"log start time [%s] "</span>, <span class="keyword">new</span> Date()));</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">after</span><span class="params">()</span> </span>&#123;      <span class="comment">// 在执行方法之后执行</span></span><br><span class="line">        System.out.println(String.format(<span class="string">"log end time [%s] "</span>, <span class="keyword">new</span> Date()));</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>然后测试一下</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Client1</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        UserService userServiceImpl = <span class="keyword">new</span> UserServiceImpl();</span><br><span class="line">        UserService proxy = <span class="keyword">new</span> UserServiceProxy(userServiceImpl);<span class="comment">//传入需要被代理的角色</span></span><br><span class="line"></span><br><span class="line">        proxy.select();</span><br><span class="line">        proxy.update();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>输出：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">log start time [Fri May <span class="number">15</span> <span class="number">10</span>:<span class="number">27</span>:<span class="number">28</span> CST <span class="number">2020</span>] </span><br><span class="line">查询 selectById</span><br><span class="line">log end time [Fri May <span class="number">15</span> <span class="number">10</span>:<span class="number">27</span>:<span class="number">28</span> CST <span class="number">2020</span>] </span><br><span class="line">log start time [Fri May <span class="number">15</span> <span class="number">10</span>:<span class="number">27</span>:<span class="number">28</span> CST <span class="number">2020</span>] </span><br><span class="line">更新 update</span><br><span class="line">log end time [Fri May <span class="number">15</span> <span class="number">10</span>:<span class="number">27</span>:<span class="number">28</span> CST <span class="number">2020</span>]</span><br></pre></td></tr></table></figure>
+
+<p>可以看到，我们通过代理类对<code>userServiceImpl</code>的两个方法进行了增强，在方法执行前后打印了一些日志。</p>
+<p>大家可能会想到，Spring中AOP功能，也可以在一些方法执行前后打印一些日志，做一些操作。其实这也是用了代理模式，但是SpringAOP中用的并不是上述的简单的静态代理，而是使用的动态代理，jdk动态代理，或者cglib动态代理。</p>
+<p>静态代理有一些优缺点我们来看一下：</p>
+<ul>
+<li>静态代理优点</li>
+</ul>
+<ol>
+<li>达到了功能增强的目的，而且没有侵入原代码</li>
+</ol>
+<ul>
+<li>静态代理缺点</li>
+</ul>
+<ol>
+<li>当需要代理多个类的时候，由于代理对象要实现与目标对象一致的接口，有两种方式：<br>只维护一个代理类，由这个代理类实现多个接口，但是这样就导致代理类过于庞大<br>新建多个代理类，每个目标对象对应一个代理类，但是这样会产生过多的代理类</li>
+<li>当接口需要增加、删除、修改方法的时候，目标对象与代理类都要同时修改，不易维护。</li>
+</ol>
+<p>一句话总结缺点，不够灵活简便。</p>
+<p>那么来看看动态代理</p>
+<ol>
+<li>jdk动态代理</li>
+</ol>
+<p>jdk动态代理主要涉及两个类：<code>java.lang.reflect.Proxy</code> 和 <code>java.lang.reflect.InvocationHandler</code>，一看到<code>reflect</code>包，应该就能想到动态代理利用看Java的反射特性。</p>
+<p>我们还编写一个代理类，实现上述静态代理中打印日志的功能</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> java.lang.reflect.InvocationHandler;</span><br><span class="line"><span class="keyword">import</span> java.lang.reflect.Method;</span><br><span class="line"><span class="keyword">import</span> java.util.Date;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">LogHandler</span> <span class="keyword">implements</span> <span class="title">InvocationHandler</span> </span>&#123;</span><br><span class="line">    Object target;  <span class="comment">// 被代理的对象，实际的方法执行者</span></span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">LogHandler</span><span class="params">(Object target)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.target = target;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> Object <span class="title">invoke</span><span class="params">(Object proxy, Method method, Object[] args)</span> <span class="keyword">throws</span> Throwable </span>&#123;</span><br><span class="line">        before();</span><br><span class="line">        Object result = method.invoke(target, args);  <span class="comment">// 调用 target 的 method 方法</span></span><br><span class="line">        after();</span><br><span class="line">        <span class="keyword">return</span> result;  <span class="comment">// 返回方法的执行结果</span></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 调用invoke方法之前执行</span></span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">before</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        System.out.println(String.format(<span class="string">"log start time [%s] "</span>, <span class="keyword">new</span> Date()));</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 调用invoke方法之后执行</span></span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">after</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        System.out.println(String.format(<span class="string">"log end time [%s] "</span>, <span class="keyword">new</span> Date()));</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>写一个主类来测试</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Client2</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> IllegalAccessException, InstantiationException </span>&#123;</span><br><span class="line">        <span class="comment">// 1. 创建被代理的对象，UserService接口的实现类</span></span><br><span class="line">        UserServiceImpl userServiceImpl = <span class="keyword">new</span> UserServiceImpl();</span><br><span class="line">        <span class="comment">// 2. 获取对应的 ClassLoader</span></span><br><span class="line">        ClassLoader classLoader = userServiceImpl.getClass().getClassLoader();</span><br><span class="line">        <span class="comment">// 3. 获取所有接口的Class，这里的UserServiceImpl只实现了一个接口UserService，</span></span><br><span class="line">        Class[] interfaces = userServiceImpl.getClass().getInterfaces();</span><br><span class="line">        <span class="comment">// 4. 创建一个将传给代理类的调用请求处理器，处理所有的代理对象上的方法调用</span></span><br><span class="line">        <span class="comment">//     这里创建的是一个自定义的日志处理器，须传入实际的执行对象 userServiceImpl</span></span><br><span class="line">        InvocationHandler logHandler = <span class="keyword">new</span> LogHandler(userServiceImpl);</span><br><span class="line">        <span class="comment">/*</span></span><br><span class="line"><span class="comment">		   5.根据上面提供的信息，创建代理对象 在这个过程中，</span></span><br><span class="line"><span class="comment">               a.JDK会通过根据传入的参数信息动态地在内存中创建和.class 文件等同的字节码</span></span><br><span class="line"><span class="comment">               b.然后根据相应的字节码转换成对应的class，</span></span><br><span class="line"><span class="comment">               c.然后调用newInstance()创建代理实例</span></span><br><span class="line"><span class="comment">		 */</span></span><br><span class="line">        UserService proxy = (UserService) Proxy.newProxyInstance(classLoader, interfaces, logHandler);</span><br><span class="line">        <span class="comment">// 调用代理的方法</span></span><br><span class="line">        proxy.select();</span><br><span class="line">        proxy.update();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>执行结果</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">log start time [Fri May <span class="number">15</span> <span class="number">10</span>:<span class="number">38</span>:<span class="number">31</span> CST <span class="number">2020</span>] </span><br><span class="line">查询 selectById</span><br><span class="line">log end time [Fri May <span class="number">15</span> <span class="number">10</span>:<span class="number">38</span>:<span class="number">31</span> CST <span class="number">2020</span>] </span><br><span class="line">log start time [Fri May <span class="number">15</span> <span class="number">10</span>:<span class="number">38</span>:<span class="number">31</span> CST <span class="number">2020</span>] </span><br><span class="line">更新 update</span><br><span class="line">log end time [Fri May <span class="number">15</span> <span class="number">10</span>:<span class="number">38</span>:<span class="number">31</span> CST <span class="number">2020</span>]</span><br></pre></td></tr></table></figure>
+
+<p>InvocationHandler 和 Proxy 的主要方法介绍如下：</p>
+<ul>
+<li>java.lang.reflect.InvocationHandler<br><code>Object invoke(Object proxy, Method method, Object[] args)</code> 定义了代理对象调用方法时希望执行的动作，用于集中处理在动态代理类对象上的方法调用</li>
+</ul>
+<ul>
+<li>java.lang.reflect.Proxy<br><code>static Object newProxyInstance(ClassLoader loader, Class&lt;?&gt;[] interfaces, InvocationHandler h)</code> 构造实现指定接口的代理类的一个新实例，所有方法会调用给定处理器对象的 invoke 方法</li>
+</ul>
+<ol start="2">
+<li>cglib动态代理</li>
+</ol>
+<p>maven引入CGLIB包</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>cglib<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>cglib<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">version</span>&gt;</span>3.3.0<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>注意，从<code>Spring 3.2</code>开始， 不需要定义cglib依赖关系它已经被重新打包并直接集成在 <code>spring-core</code> 这个jar包中。</li>
+</ul>
+<p>编写一个UserDao类，它没有接口，只有两个方法，select() 和 update()</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">UserDao</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">select</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        System.out.println(<span class="string">"UserDao 查询 selectById"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">update</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        System.out.println(<span class="string">"UserDao 更新 update"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>编写一个 LogInterceptor ，继承了 MethodInterceptor，用于方法的拦截回调</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">LogInterceptor</span> <span class="keyword">implements</span> <span class="title">MethodInterceptor</span> </span>&#123;</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> object 表示要进行增强的对象</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> method 表示拦截的方法</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> objects 数组表示参数列表，基本数据类型需要传入其包装类型，如int--&gt;Integer、long-Long、double--&gt;Double</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> methodProxy 表示对方法的代理，invokeSuper方法表示对被代理对象方法的调用</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@return</span> 执行结果</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@throws</span> Throwable</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> Object <span class="title">intercept</span><span class="params">(Object object, Method method, Object[] objects, MethodProxy methodProxy)</span> <span class="keyword">throws</span> Throwable </span>&#123;</span><br><span class="line">        before();</span><br><span class="line">        Object result = methodProxy.invokeSuper(object, objects);   <span class="comment">// 注意这里是调用 invokeSuper 而不是 invoke，否则死循环，methodProxy.invokesuper执行的是原始类的方法，method.invoke执行的是子类的方法</span></span><br><span class="line">        after();</span><br><span class="line">        <span class="keyword">return</span> result;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">before</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        System.out.println(String.format(<span class="string">"log start time [%s] "</span>, <span class="keyword">new</span> Date()));</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">after</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        System.out.println(String.format(<span class="string">"log end time [%s] "</span>, <span class="keyword">new</span> Date()));</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>测试类：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">CglibTest</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        LogInterceptor logInterceptor = <span class="keyword">new</span> LogInterceptor();</span><br><span class="line">        Enhancer enhancer = <span class="keyword">new</span> Enhancer();</span><br><span class="line">        enhancer.setSuperclass(UserDao.class);   <span class="comment">// 设置超类，cglib是通过继承来实现的</span></span><br><span class="line">        enhancer.setCallback(logInterceptor);</span><br><span class="line"></span><br><span class="line">        UserDao proxy = (UserDao) enhancer.create();   <span class="comment">// 创建代理类</span></span><br><span class="line">        proxy.select();</span><br><span class="line">        proxy.update();</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>执行结果：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">log start time [Fri May <span class="number">15</span> <span class="number">10</span>:<span class="number">50</span>:<span class="number">36</span> CST <span class="number">2020</span>] </span><br><span class="line">UserDao 查询 selectById</span><br><span class="line">log end time [Fri May <span class="number">15</span> <span class="number">10</span>:<span class="number">50</span>:<span class="number">36</span> CST <span class="number">2020</span>] </span><br><span class="line">log start time [Fri May <span class="number">15</span> <span class="number">10</span>:<span class="number">50</span>:<span class="number">36</span> CST <span class="number">2020</span>] </span><br><span class="line">UserDao 更新 update</span><br><span class="line">log end time [Fri May <span class="number">15</span> <span class="number">10</span>:<span class="number">50</span>:<span class="number">36</span> CST <span class="number">2020</span>]</span><br></pre></td></tr></table></figure>
+
+<p>还可以进一步多个 MethodInterceptor 进行过滤筛选</p>
+<p>定义<code>LogInterceptor2</code></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">LogInterceptor2</span> <span class="keyword">implements</span> <span class="title">MethodInterceptor</span> </span>&#123;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> Object <span class="title">intercept</span><span class="params">(Object object, Method method, Object[] objects, MethodProxy methodProxy)</span> <span class="keyword">throws</span> Throwable </span>&#123;</span><br><span class="line">        before();</span><br><span class="line">        Object result = methodProxy.invokeSuper(object, objects);</span><br><span class="line">        after();</span><br><span class="line">        <span class="keyword">return</span> result;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">before</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        System.out.println(String.format(<span class="string">"log2 start time [%s] "</span>, <span class="keyword">new</span> Date()));</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">after</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        System.out.println(String.format(<span class="string">"log2 end time [%s] "</span>, <span class="keyword">new</span> Date()));</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>定义一个回调过滤器，在cglib回调时可以设置对不同方法执行不同的回调逻辑，或者根本不执行回调。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">DaoFilter</span> <span class="keyword">implements</span> <span class="title">CallbackFilter</span> </span>&#123;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">accept</span><span class="params">(Method method)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (<span class="string">"select"</span>.equals(method.getName())) &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="number">0</span>;   <span class="comment">// Callback 列表第1个拦截器 UserDao.select方法执行第一个拦截器</span></span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> <span class="number">1</span>;   <span class="comment">// Callback 列表第2个拦截器，return 2 则为第3个，以此类推</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>测试类：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">CglibTest2</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        LogInterceptor logInterceptor = <span class="keyword">new</span> LogInterceptor();</span><br><span class="line">        LogInterceptor2 logInterceptor2 = <span class="keyword">new</span> LogInterceptor2();</span><br><span class="line">        Enhancer enhancer = <span class="keyword">new</span> Enhancer();</span><br><span class="line">        enhancer.setSuperclass(UserDao.class);   <span class="comment">// 设置超类，cglib是通过继承来实现的</span></span><br><span class="line">        enhancer.setCallbacks(<span class="keyword">new</span> Callback[]&#123;logInterceptor, logInterceptor2, NoOp.INSTANCE&#125;);   <span class="comment">// 设置多个拦截器，NoOp.INSTANCE是一个空拦截器，不做任何处理</span></span><br><span class="line">        enhancer.setCallbackFilter(<span class="keyword">new</span> DaoFilter());</span><br><span class="line"></span><br><span class="line">        UserDao proxy = (UserDao) enhancer.create();   <span class="comment">// 创建代理类</span></span><br><span class="line">        proxy.select();</span><br><span class="line">        proxy.update();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>运行结果</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">log start time [Fri May <span class="number">15</span> <span class="number">10</span>:<span class="number">54</span>:<span class="number">18</span> CST <span class="number">2020</span>] </span><br><span class="line">UserDao 查询 selectById</span><br><span class="line">log end time [Fri May <span class="number">15</span> <span class="number">10</span>:<span class="number">54</span>:<span class="number">18</span> CST <span class="number">2020</span>] </span><br><span class="line">log2 start time [Fri May <span class="number">15</span> <span class="number">10</span>:<span class="number">54</span>:<span class="number">18</span> CST <span class="number">2020</span>] </span><br><span class="line">UserDao 更新 update</span><br><span class="line">log2 end time [Fri May <span class="number">15</span> <span class="number">10</span>:<span class="number">54</span>:<span class="number">18</span> CST <span class="number">2020</span>]</span><br></pre></td></tr></table></figure>
+<p>可以看到</p>
+<ul>
+<li>select方法执行第一个拦截器，打印<code>log</code></li>
+<li>update方法执行第二个拦截器，打印<code>log2</code></li>
+</ul>
+<p>cglib 创建动态代理类的模式是：</p>
+<ol>
+<li>查找目标类上的所有非final 的public类型的方法定义；</li>
+<li>将这些方法的定义转换成字节码；</li>
+<li>将组成的字节码转换成相应的代理的class对象；</li>
+<li>实现 MethodInterceptor接口，用来处理对代理类上所有方法的请求</li>
+</ol>
+<p>jdk动态代理与cglib动态代理对比:</p>
+<ul>
+<li>jdk动态代理：基于Java反射机制实现，必须要实现了接口的业务类才能用这种办法生成代理对象。</li>
+<li>cglib动态代理：基于ASM机制实现，通过生成业务类的子类作为代理类。</li>
+</ul>
+<p>jdk动态代理的优势：</p>
+<ol>
+<li>最小化依赖关系，减少依赖意味着简化开发和维护，JDK 本身的支持，可能比 cglib 更加可靠。</li>
+<li>平滑进行 JDK 版本升级，而字节码类库通常需要进行更新以保证在新版 Java 上能够使用。</li>
+<li>代码实现简单。</li>
+</ol>
+<p>cglib动态代理的优势：</p>
+<ol>
+<li>无需实现接口，达到代理类无侵入</li>
+<li>只操作我们关心的类，而不必为其他相关类增加工作量。</li>
+<li>高性能</li>
+</ol>
+<p>另外：</p>
+<ul>
+<li>Spring5 之前的版本 AOP 在默认情况下是使用 jdk 动态代理的，之后的版本默认使用 jdk 动态代理，如果对象没有实现接口，则使用 cglib 代理。</li>
+<li>在 SpringBoot 1.5.x 版本中，默认还是使用 jdk 动态代理的。</li>
+<li>SpringBoot 2.x 为何默认使用 cglib</li>
+</ul>
+<p>SpringBoot 2.x 版本为什么要默认使用 Cglib 来实现 AOP 呢？这么做的好处又是什么呢？</p>
+<p>假设，我们有一个UserServiceImpl和UserService类，此时需要在UserContoller中使用UserService。在 Spring 中通常都习惯这样写代码：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Autowired</span></span><br><span class="line">UserService userService;</span><br></pre></td></tr></table></figure>
+
+<p>在这种情况下，无论是使用 jdk 动态代理，还是 cglib 都不会出现问题。</p>
+<p>但是，如果你的代码是这样的呢：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Autowired</span></span><br><span class="line">UserServiceImpl userService;</span><br></pre></td></tr></table></figure>
+
+<p>这个时候，如果我们是使用 JDK 动态代理，那在启动时就会报错：</p>
+<p>因为 JDK 动态代理是基于接口的，代理生成的对象只能赋值给接口变量。<br>而 CGLIB 就不存在这个问题。因为 CGLIB 是通过生成子类来实现的，代理对象无论是赋值给接口还是实现类这两者都是代理对象的父类。<br>SpringBoot 正是出于这种考虑，于是在 2.x 版本中，将 AOP 默认实现改为了 CGLIB。</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-Hans">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/04/28/Java%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%EF%BC%88%E4%B9%9D%EF%BC%89%E4%B9%8B%E6%8C%87%E4%BB%A4%E9%87%8D%E6%8E%92%E5%BA%8F/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1042,76 +1237,6 @@
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-Hans">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/11/13/Java%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%EF%BC%88%E4%B8%80%EF%BC%89%E4%B9%8B%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="猫屎咖啡">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="猫屎咖啡">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2019/11/13/Java%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%EF%BC%88%E4%B8%80%EF%BC%89%E4%B9%8B%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/" class="post-title-link" itemprop="url">Java并发编程（一）之并发编程基础知识</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">Posted on</span>
-              
-
-              <time title="Created: 2019-11-13 21:02:52 / Modified: 22:04:55" itemprop="dateCreated datePublished" datetime="2019-11-13T21:02:52+08:00">2019-11-13</time>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>并发编程是每一个软件工程师（不要再叫自己程序员了，我们是软件工程师）都需要学习的知识，对于一个优秀的软件工程师来说，掌握好并发编程是一门必修课。所以，为了成为一名优秀的软件工程师，我在半年多以前就开始学习并发编程的知识，但是因为后来工作的原因，这个学习计划就被搁置了，今天再次回顾以前学习的知识，发现大部分都被我忘记了，因为工作中用到并发编程的知识实在是少。做Java后端开发的同学也应该深有体会，大部分工作只是业务逻辑的curd，一些同行也戏称自己是“curd boy”。今天再次拾起并发编程的知识，也在此做个笔记，分享一下，有理解的不正确的还请大家指正，共同学习，也为自己加深一遍印象，让自己忘得慢一些，也方便以后复习的时候再去慢慢翻书，直接看笔记就好，会省下很多时间。</p>
-<p>要学习并发编程，首先我们要了解，什么是并发编程？</p>
-<p>提起并发编程很多人会混乱并发与并行两个概念，所以首先要澄清并发与并行的概念与区别。</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">并发是指同一个时间段内多个任务同时都在执行，而并行是说在单位时间内多个任务同时执行。</span><br></pre></td></tr></table></figure>
-
-<p>看起来很迷惑对不对，什么叫同一个时间段，什么叫单位时间？通俗的来说，一个时间段有多个单位时间累积而成，并发就是多个任务在这个时间段内执行，但不一定在同一个单位时间执行。而并行则是多个任务在同一个单位时间同时执行。</p>
-<p>举个例子：</p>
-<p>就拿人吃饭来说，一般大家吃饭的时候都会有再配一碗汤，我们可以把吃饭看做两个任务，一个是吃馒头，一个是喝汤，吃一口馒头是一个单位时间，喝一口汤也是一个单位时间，吃饭花费的时间就是一个时间段，而我们的嘴，是用来执行吃饭任务的，也就是一个CPU。一般我们吃饭的时候都是吃两口馒头，喝一口汤，在单个CPU的情况下（也就是我们只有一个嘴的情况下），吃馒头和喝汤是交替执行的，不可能在吃馒头的同时再喝一口汤，这就是并发，两个任务吃馒头喝汤，在同一个时间段内执行，但不一定是同一个单位时间执行。那么什么是并行呢，假设有人长了两张嘴，在吃饭的时候，一张嘴吃馒头的同时，另一张嘴喝汤，在同一个单位时间，执行两个或者多个任务，这就是并行。</p>
-<p>在单CPU时代，多个任务是共享一个CPU的，当一个任务占用CPU时，其他任务就会被挂起不能执行，当占用CPU的任务时间片用完后，才会把CPU让给其他任务使用，也就是，当我们吃馒头的时候，嘴正在被占用着，喝汤这个任务就没法占用我们的嘴，只有当咬下这一口馒头，才会把嘴的使用权交给喝汤这个任务。</p>
-<p>在单CPU时代，多线程编程是没有太大意义的，因为CPU只有一个，每个线程都只能交替使用这一个CPU，这样会导致线程间频繁的上下文切换，这也会带来额外的开销。就好比我们吃饭的时候，咬一口馒头咽下去，再伸手拿汤递到嘴边喝一口，再咬一口馒头咽下去，再把汤递到嘴边喝一口，这样的方式显然没有我们一开始就只吃馒头，吃完馒头，再端起汤来一口一口喝掉来的省时间。</p>
-<p>如果为双CPU配置，线程A和线程B各自在自己的cpu上执行任务，那就真正的实现了并行运行。但在多线程编程实践中，线程的个数往往多余CPU的个数，所以一般都称多线程并发编程而不多线程并行编程。</p>
-<p>到如今，连个人电脑都不止单个CPU了，一般的服务器的CPU个数几乎都能达到几十个，这打破了单个CPU对多线程编程效能的限制，多个CPU意味着每个线程都可以使用自己的CPU运行，这减少了线程上下文切换的开销，但随着对应用系统性能和吞吐量要求的提高，出现了处理海量数据和请求的要求，这些都对高并发编程有着迫切的需求。</p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -1181,14 +1306,14 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">19</span>
+          <span class="site-state-item-count">20</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">13</span>
+        <span class="site-state-item-count">16</span>
         <span class="site-state-item-name">tags</span></a>
       </div>
   </nav>

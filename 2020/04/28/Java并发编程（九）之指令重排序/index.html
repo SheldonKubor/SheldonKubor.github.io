@@ -22,21 +22,21 @@
     var CONFIG = {"hostname":"yoursite.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
   </script>
 
-  <meta name="description" content="学习CAS之前，先了解一下什么是原子性操作，所谓的原子性操作，是指进行一系列操作的时候，这一系列操作要么全部执行，要么全部不执行，不会出现只执行一部分的情况。 例如，我们对一个变量进行+1（例如x++）操作的时候，首先要读取当前变量值，然后+1，然后再将新值赋值给该变量。这就是一个读-改-写的过程。如果这个过程不是原子性的，那么久就会出现线程安全问题。虽然x++只有一行代码，但是其中的操作并不是一">
+  <meta name="description" content="Java内存模型允许编译器和处理器对指令进行重排序以提高程序性能，但是只会对没有数据依赖性的指令进行重排序。单线程的情况下，重排序可以保证运行结果与不进行重排序运行结果一致，但在多线程下就会存在问题。 举个例子： 123int a &#x3D; 1;      &#x2F;&#x2F;(1)int b &#x3D; 2;      &#x2F;&#x2F;(2)int c &#x3D; a + b;  &#x2F;&#x2F;(3)  在上述代码中，变量 c 的值依赖于 a 和 b ，">
 <meta property="og:type" content="article">
-<meta property="og:title" content="Java并发编程（八）之CAS操作">
-<meta property="og:url" content="http://yoursite.com/2020/04/22/Java%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%EF%BC%88%E5%85%AB%EF%BC%89%E4%B9%8BCAS%E6%93%8D%E4%BD%9C/index.html">
+<meta property="og:title" content="Java并发编程（九）之指令重排序">
+<meta property="og:url" content="http://yoursite.com/2020/04/28/Java%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%EF%BC%88%E4%B9%9D%EF%BC%89%E4%B9%8B%E6%8C%87%E4%BB%A4%E9%87%8D%E6%8E%92%E5%BA%8F/index.html">
 <meta property="og:site_name" content="猫屎咖啡">
-<meta property="og:description" content="学习CAS之前，先了解一下什么是原子性操作，所谓的原子性操作，是指进行一系列操作的时候，这一系列操作要么全部执行，要么全部不执行，不会出现只执行一部分的情况。 例如，我们对一个变量进行+1（例如x++）操作的时候，首先要读取当前变量值，然后+1，然后再将新值赋值给该变量。这就是一个读-改-写的过程。如果这个过程不是原子性的，那么久就会出现线程安全问题。虽然x++只有一行代码，但是其中的操作并不是一">
-<meta property="article:published_time" content="2020-04-22T02:17:18.000Z">
-<meta property="article:modified_time" content="2020-04-24T07:58:28.410Z">
+<meta property="og:description" content="Java内存模型允许编译器和处理器对指令进行重排序以提高程序性能，但是只会对没有数据依赖性的指令进行重排序。单线程的情况下，重排序可以保证运行结果与不进行重排序运行结果一致，但在多线程下就会存在问题。 举个例子： 123int a &#x3D; 1;      &#x2F;&#x2F;(1)int b &#x3D; 2;      &#x2F;&#x2F;(2)int c &#x3D; a + b;  &#x2F;&#x2F;(3)  在上述代码中，变量 c 的值依赖于 a 和 b ，">
+<meta property="article:published_time" content="2020-04-28T01:30:37.000Z">
+<meta property="article:modified_time" content="2020-04-29T08:36:10.936Z">
 <meta property="article:author" content="猫屎咖啡">
 <meta property="article:tag" content="多线程">
 <meta property="article:tag" content="并发">
 <meta property="article:tag" content="Java">
 <meta name="twitter:card" content="summary">
 
-<link rel="canonical" href="http://yoursite.com/2020/04/22/Java%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%EF%BC%88%E5%85%AB%EF%BC%89%E4%B9%8BCAS%E6%93%8D%E4%BD%9C/">
+<link rel="canonical" href="http://yoursite.com/2020/04/28/Java%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%EF%BC%88%E4%B9%9D%EF%BC%89%E4%B9%8B%E6%8C%87%E4%BB%A4%E9%87%8D%E6%8E%92%E5%BA%8F/">
 
 
 <script id="page-configurations">
@@ -49,7 +49,7 @@
   };
 </script>
 
-  <title>Java并发编程（八）之CAS操作 | 猫屎咖啡</title>
+  <title>Java并发编程（九）之指令重排序 | 猫屎咖啡</title>
   
 
 
@@ -164,7 +164,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-Hans">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/04/22/Java%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%EF%BC%88%E5%85%AB%EF%BC%89%E4%B9%8BCAS%E6%93%8D%E4%BD%9C/">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/04/28/Java%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%EF%BC%88%E4%B9%9D%EF%BC%89%E4%B9%8B%E6%8C%87%E4%BB%A4%E9%87%8D%E6%8E%92%E5%BA%8F/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/avatar.gif">
@@ -177,7 +177,7 @@
     </span>
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
-          Java并发编程（八）之CAS操作
+          Java并发编程（九）之指令重排序
         </h1>
 
         <div class="post-meta">
@@ -187,14 +187,14 @@
               </span>
               <span class="post-meta-item-text">Posted on</span>
 
-              <time title="Created: 2020-04-22 10:17:18" itemprop="dateCreated datePublished" datetime="2020-04-22T10:17:18+08:00">2020-04-22</time>
+              <time title="Created: 2020-04-28 09:30:37" itemprop="dateCreated datePublished" datetime="2020-04-28T09:30:37+08:00">2020-04-28</time>
             </span>
               <span class="post-meta-item">
                 <span class="post-meta-item-icon">
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-04-24 15:58:28" itemprop="dateModified" datetime="2020-04-24T15:58:28+08:00">2020-04-24</time>
+                <time title="Modified: 2020-04-29 16:36:10" itemprop="dateModified" datetime="2020-04-29T16:36:10+08:00">2020-04-29</time>
               </span>
 
           
@@ -208,27 +208,17 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <p>学习<code>CAS</code>之前，先了解一下什么是原子性操作，所谓的原子性操作，是指进行一系列操作的时候，这一系列操作要么全部执行，要么全部不执行，不会出现只执行一部分的情况。</p>
-<p>例如，我们对一个变量进行+1（例如<code>x++</code>）操作的时候，首先要读取当前变量值，然后+1，然后再将新值赋值给该变量。这就是一个<code>读-改-写</code>的过程。如果这个过程不是原子性的，那么久就会出现线程安全问题。虽然<code>x++</code>只有一行代码，但是其中的操作并不是一步而成的，其操作不是原子性的。</p>
-<p>通过之前所学，我们知道<code>synchronized</code>关键字可以解决线程安全问题，也就是<code>内存可见性</code>与<code>原子性</code>。但是<code>synchronized</code>是独占锁，没有获取到锁的线程将会被阻塞，会降低程序性能。例如下面代码：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ThreadSafeCount</span></span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">int</span> value;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">synchronized</span> <span class="keyword">int</span> <span class="title">getCount</span><span class="params">()</span></span>&#123;</span><br><span class="line">        <span class="keyword">return</span> value;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">synchronized</span> <span class="keyword">void</span> <span class="title">incCount</span><span class="params">()</span></span>&#123;</span><br><span class="line">        value++;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+        <p>Java内存模型允许编译器和处理器对指令进行重排序以提高程序性能，但是只会对没有数据依赖性的指令进行重排序。单线程的情况下，重排序可以保证运行结果与不进行重排序运行结果一致，但在多线程下就会存在问题。</p>
+<p>举个例子：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> a = <span class="number">1</span>;      <span class="comment">//(1)</span></span><br><span class="line"><span class="keyword">int</span> b = <span class="number">2</span>;      <span class="comment">//(2)</span></span><br><span class="line"><span class="keyword">int</span> c = a + b;  <span class="comment">//(3)</span></span><br></pre></td></tr></table></figure>
 
-<p>可以看到两个方法都加了锁，但是同一时间只能有一个线程来调用，其中<code>getCount</code>方法是只读方法，多个线程同时调用不会有线程安全问题，但是加了synchronized关键字之后，同一时间只能有一个线程来调用，降低了并发性能。那能不能去掉这个关键字呢，也不能去掉，因为我们还需要synchronized来保证内存可见性。</p>
-<h3 id="CAS操作"><a href="#CAS操作" class="headerlink" title="CAS操作"></a>CAS操作</h3><p>我们学过两个关键字<code>synchronized</code>与<code>volatile</code>，两者都可以解决共享变量内存可见性的问题，但是，<code>volatile</code>不能解决<code>读-改-写</code>等原子性的问题，<code>synchronized</code>能够解决原子性问题，但是其性能开销大。</p>
-<p>CAS操作是<code>Compare And Swap</code>，是JDK提供的非阻塞原子性操作，通过硬件保证了<code>比较-更新</code>操作的原子性。JDK里面的<code>Unsafe</code>类提供了一系列<code>compareAndSwap*</code>方法，比如<code>compareAndSwapInt</code>和<code>compareAndSwapLong</code>。下面我们以<code>compareAndSwapLong</code>为例子进行简单介绍。</p>
-<p><code>boolean compareAndSwapLong(Object obj,long valueOffset,long expect,long update)</code>方法：四个参数，含义分别是：对象内存位置，对象中变量的偏移量，变量的预期值，新的值。其操作的含义是，若对象<code>obj</code>中内存偏移量为<code>valueOffset</code>的变量值为<code>expect</code>，则用新的值<code>update</code>替换旧的值，也就是替换<code>expect</code>。这是处理器提供的一个原子性命令。</p>
-<p>CAS操作虽然很高效地解决了原子操作，但是仍然存在三大问题：<code>ABA问题</code>、<code>循环开销时间大</code>、<code>只能保证一个共享变量的原子操作</code></p>
-<ol>
-<li>ABA问题<br>CAS在操作值得时候，会检查值有没有发生变化，如果没有发生变化就更新。若是一个值原来是A，变成了B，后来又变回了A（举例：线程1获取变量值为A后，在执行CAS之前，线程2使用CAS修改变量的值为B，然后又修改变量值为A），那么使用CAS操作时检查其值得结果是没有变化，但其实是变化了，虽然线程1执行CAS操作时变量的值为A，但是这个A已经不是线程1获取变量值时的A了，这就是ABA问题。</li>
-</ol>
-<p>看起来好像最后还是正确的修改了变量值，但其实是丢失了变量值得修改记录。此问题的解决方案就是使用版本号，在变量前面追加上版本号，每次变量更新的时候把版本号+1，这样<code>A-B-A</code>就会变为<code>1A-2B-3A</code>。从Java1.5开始，JDK的Atomic包里就提供了一个类<code>AtomicStampedReference</code>来解决ABA问题，其中<code>compareAndSet</code>方法的作用就是，先检查当前引用是否等于预期引用，并检查当前标志是否等于预期标志，如果全部相等，就进行更新。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">compareAndSet</span><span class="params">(V expectedReference,//预期引用</span></span></span><br><span class="line"><span class="function"><span class="params">                                V newReference,//更新后引用</span></span></span><br><span class="line"><span class="function"><span class="params">                                <span class="keyword">int</span> expectedStamp,//当前标志</span></span></span><br><span class="line"><span class="function"><span class="params">                                <span class="keyword">int</span> newStamp)</span><span class="comment">//更新后标志</span></span></span><br></pre></td></tr></table></figure>
-<ol start="2">
-<li><p>循环时间长，开销大<br>自旋CAS如果长时间不成功，会给CPU带来非常大的开销。</p>
-</li>
-<li><p>只能保证一个共享变量的原子操作<br>当对一个共享变量执行操作的时候，我们可以使用CAS的方式来保证原子操作，但是对多个共享变量操作时，循环CAS就无法保证操作的原子性，这个时候就可以用锁。从Java1.5开始，JDK的Atomic包里就提供了一个类<code>AtomicReference</code>类来保证引用对象直接的原子性，就可以多个变量放在一个对象里来进行CAS操作。</p>
-</li>
-</ol>
+<p>在上述代码中，变量 c 的值依赖于 a 和 b ，所以在重排序之后，需要保证(1)和(2)的操作在(3)之前，c的值就不会受到影响，但是(1)和(2)的操作谁先执行在重排序之后并不能确定。这样的情况在单线程下不会出现问题，因为单线程下不会影响最终结果。</p>
+<p>下面看个多线程的例子</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">InstructionReorder</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">int</span> num = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">boolean</span> ready = <span class="keyword">false</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="class"><span class="keyword">class</span> <span class="title">ReadThread</span> <span class="keyword">extends</span> <span class="title">Thread</span> </span>&#123;</span><br><span class="line">        <span class="meta">@Override</span></span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">            <span class="keyword">while</span> (!Thread.currentThread().isInterrupted())&#123;</span><br><span class="line">                <span class="keyword">if</span>(ready)&#123; <span class="comment">//(1)</span></span><br><span class="line">                    System.out.println(num+num); <span class="comment">//(2)</span></span><br><span class="line">                &#125;</span><br><span class="line">                System.out.println(<span class="string">"read thread..."</span>);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="class"><span class="keyword">class</span> <span class="title">WriteThread</span> <span class="keyword">extends</span> <span class="title">Thread</span> </span>&#123;</span><br><span class="line">        <span class="meta">@Override</span></span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">            num = <span class="number">2</span>; <span class="comment">//(3)</span></span><br><span class="line">            ready = <span class="keyword">true</span>; <span class="comment">//(4)</span></span><br><span class="line">            System.out.println(<span class="string">"write thread set over"</span>);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> InterruptedException</span>&#123;</span><br><span class="line">        ReadThread readThread = <span class="keyword">new</span> ReadThread();</span><br><span class="line">        readThread.start();</span><br><span class="line"></span><br><span class="line">        WriteThread writeThread = <span class="keyword">new</span> WriteThread();</span><br><span class="line">        writeThread.start();</span><br><span class="line"></span><br><span class="line">        Thread.sleep(<span class="number">10</span>);</span><br><span class="line">        readThread.interrupt();</span><br><span class="line">        System.out.println(<span class="string">"main exit"</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这段代码里变量都没有被<code>volatile</code>修饰，也没有任何同步措施，在多线程的情况下存在内存可见性问题。但先不考虑这个问题，在不考虑内存可见性问题的情况下，这段程序一定会输出4吗？答案是不一定，由于代码(1)(2)和(3)(4)之间不存在依赖关系，所以(3)(4)可能被重排序为先执行(4)，再执行(3)，那么执行(4)之后，读线程可能已经执行了(1)操作，并且在(3)操作执行前开始执行(2)操作，这时候输出的结果是0而不是4。</p>
+<p>解决方法就是使用<code>volatile</code>修饰共享变量，可以避免重排序与内存可见性问题。</p>
+<p>写<code>volatile</code>变量时，可以确保<code>volatile</code>写之前的操作不会被重排序到<code>volatile</code>写之后，读<code>volatile</code>变量时，可以确保<code>volatile</code>读之后的操作不会被编译器重排序到<code>volatile</code>读之前。</p>
 
     </div>
 
@@ -249,13 +239,10 @@
         
     <div class="post-nav">
       <div class="post-nav-item">
-    <a href="/2020/04/20/Java%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%EF%BC%88%E4%B8%83%EF%BC%89%E4%B9%8B%E5%90%84%E7%A7%8D%E9%94%81/" rel="prev" title="Java并发编程（七）之各种锁">
-      <i class="fa fa-chevron-left"></i> Java并发编程（七）之各种锁
+    <a href="/2020/04/22/Java%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%EF%BC%88%E5%85%AB%EF%BC%89%E4%B9%8BCAS%E6%93%8D%E4%BD%9C/" rel="prev" title="Java并发编程（八）之CAS操作">
+      <i class="fa fa-chevron-left"></i> Java并发编程（八）之CAS操作
     </a></div>
-      <div class="post-nav-item">
-    <a href="/2020/04/28/Java%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%EF%BC%88%E4%B9%9D%EF%BC%89%E4%B9%8B%E6%8C%87%E4%BB%A4%E9%87%8D%E6%8E%92%E5%BA%8F/" rel="next" title="Java并发编程（九）之指令重排序">
-      Java并发编程（九）之指令重排序 <i class="fa fa-chevron-right"></i>
-    </a></div>
+      <div class="post-nav-item"></div>
     </div>
       </footer>
     
@@ -314,7 +301,6 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#CAS操作"><span class="nav-number">1.</span> <span class="nav-text">CAS操作</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 
